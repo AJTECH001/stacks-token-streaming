@@ -6,6 +6,8 @@
 (define-constant ERR_INVALID_SIGNATURE (err u1))
 (define-constant ERR_STREAM_STILL_ACTIVE (err u2))
 (define-constant ERR_INVALID_STREAM_ID (err u3))
+(define-constant ERR_STREAM_ALREADY_PAUSED (err u4))
+(define-constant ERR_STREAM_NOT_PAUSED (err u5))
 
 ;; data vars
 (define-data-var latest-stream-id uint u0)
@@ -19,7 +21,10 @@
     balance: uint,
     withdrawn-balance: uint,
     payment-per-block: uint,
-    timeframe: (tuple (start-block uint) (stop-block uint))
+    timeframe: (tuple (start-block uint) (stop-block uint)),
+    is-paused: bool,
+    paused-at-block: (optional uint),
+    total-paused-blocks: uint
   }
 )
 
@@ -37,7 +42,10 @@
       balance: initial-balance,
       withdrawn-balance: u0,
       payment-per-block: payment-per-block,
-      timeframe: timeframe
+      timeframe: timeframe,
+      is-paused: false,
+      paused-at-block: none,
+      total-paused-blocks: u0
     })
     (current-stream-id (var-get latest-stream-id))
   )
@@ -71,15 +79,28 @@
   )
 )
 
-;; Calculate the number of blocks a stream has been active
-(define-read-only (calculate-block-delta
-    (timeframe (tuple (start-block uint) (stop-block uint)))
+;; Calculate the number of active blocks for a stream (excluding paused time)
+(define-read-only (calculate-active-block-delta
+    (stream (tuple
+      (sender principal)
+      (recipient principal)
+      (balance uint)
+      (withdrawn-balance uint)
+      (payment-per-block uint)
+      (timeframe (tuple (start-block uint) (stop-block uint)))
+      (is-paused bool)
+      (paused-at-block (optional uint))
+      (total-paused-blocks uint)
+    ))
   )
   (let (
-    (start-block (get start-block timeframe))
-    (stop-block (get stop-block timeframe))
+    (start-block (get start-block (get timeframe stream)))
+    (stop-block (get stop-block (get timeframe stream)))
+    (is-paused (get is-paused stream))
+    (paused-at-block (get paused-at-block stream))
+    (total-paused-blocks (get total-paused-blocks stream))
 
-    (delta
+    (raw-delta
       (if (<= stacks-block-height start-block)
         ;; then
         u0
@@ -92,8 +113,20 @@
         )
       )
     )
+
+    (current-pause-duration
+      (if (and is-paused (is-some paused-at-block))
+        (- stacks-block-height (unwrap-panic paused-at-block))
+        u0
+      )
+    )
+
+    (total-pause-time (+ total-paused-blocks current-pause-duration))
   )
-    delta
+    (if (> raw-delta total-pause-time)
+      (- raw-delta total-pause-time)
+      u0
+    )
   )
 )
 
@@ -104,8 +137,8 @@
   )
   (let (
     (stream (unwrap! (map-get? streams stream-id) u0))
-    (block-delta (calculate-block-delta (get timeframe stream)))
-    (recipient-balance (* block-delta (get payment-per-block stream)))
+    (active-block-delta (calculate-active-block-delta stream))
+    (recipient-balance (* active-block-delta (get payment-per-block stream)))
   )
     (if (is-eq who (get recipient stream))
       (- recipient-balance (get withdrawn-balance stream))
@@ -210,4 +243,55 @@
 ;; Read-only function to get latest stream ID
 (define-read-only (get-latest-stream-id)
   (var-get latest-stream-id)
+)
+
+;; Pause a stream (only sender can pause)
+(define-public (pause-stream (stream-id uint))
+  (let (
+    (stream (unwrap! (map-get? streams stream-id) ERR_INVALID_STREAM_ID))
+  )
+    (asserts! (is-eq contract-caller (get sender stream)) ERR_UNAUTHORIZED)
+    (asserts! (not (get is-paused stream)) ERR_STREAM_ALREADY_PAUSED)
+    (map-set streams stream-id (merge stream {
+      is-paused: true,
+      paused-at-block: (some stacks-block-height)
+    }))
+    (ok true)
+  )
+)
+
+;; Resume a stream (only sender can resume)
+(define-public (resume-stream (stream-id uint))
+  (let (
+    (stream (unwrap! (map-get? streams stream-id) ERR_INVALID_STREAM_ID))
+    (paused-at-block (unwrap! (get paused-at-block stream) ERR_STREAM_NOT_PAUSED))
+    (pause-duration (- stacks-block-height paused-at-block))
+  )
+    (asserts! (is-eq contract-caller (get sender stream)) ERR_UNAUTHORIZED)
+    (asserts! (get is-paused stream) ERR_STREAM_NOT_PAUSED)
+    (map-set streams stream-id (merge stream {
+      is-paused: false,
+      paused-at-block: none,
+      total-paused-blocks: (+ (get total-paused-blocks stream) pause-duration)
+    }))
+    (ok true)
+  )
+)
+
+;; Check if a stream is currently paused
+(define-read-only (is-stream-paused (stream-id uint))
+  (let (
+    (stream (unwrap! (map-get? streams stream-id) false))
+  )
+    (get is-paused stream)
+  )
+)
+
+;; Get total paused blocks for a stream
+(define-read-only (get-total-paused-blocks (stream-id uint))
+  (let (
+    (stream (unwrap! (map-get? streams stream-id) u0))
+  )
+    (get total-paused-blocks stream)
+  )
 )
