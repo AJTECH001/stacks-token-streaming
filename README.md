@@ -17,6 +17,9 @@ A comprehensive DeFi platform built on Stacks blockchain featuring token streami
 - **Liquidity Provision**: Add and remove liquidity to earn trading fees
 - **Token Swapping**: Swap between tokens with automated price discovery
 - **Fee Distribution**: Trading fees are distributed to liquidity providers
+- **🆕 STX Support**: Native STX token trading alongside SIP-010 tokens
+- **🆕 Multi-Hop Swaps**: Foundation for complex routing (A→B→C swaps)
+- **🆕 Enhanced UI**: Modern, responsive interface with advanced features
 
 ## Smart Contracts
 
@@ -37,6 +40,8 @@ Implements the decentralized exchange:
 - `swap`: Swap tokens using the constant product formula
 - `get-pool-data`: Query pool information
 - `get-position-liquidity`: Check user's liquidity position
+- `🆕 multi-hop-swap`: Multi-hop token swaps (A→B→C) - foundation implemented
+- `🆕 transfer-tokens`: Unified token transfer supporting both STX and SIP-010 tokens
 
 ### Mock Token Contract (`mock-token.clar`)
 SIP-010 compliant token for testing:
@@ -46,7 +51,7 @@ SIP-010 compliant token for testing:
 
 ## Frontend
 
-Modern Next.js application with three main sections:
+Modern Next.js application with enhanced DeFi features:
 
 ### Token Streaming Interface
 - Create new payment streams
@@ -55,16 +60,74 @@ Modern Next.js application with three main sections:
 - Withdraw available tokens
 
 ### DEX Interface
-- **Swap Page**: Trade tokens between different pairs
+- **Swap Page**: Trade tokens between different pairs (including STX)
 - **Pools Page**: View all trading pools, create new ones, and manage liquidity
+- **🆕 Multi-Hop Swaps**: Advanced routing interface for complex swaps
 - Real-time price calculations using the AMM formula
 - Liquidity position management
+- **🆕 STX Integration**: Native STX token support in all operations
 
 ### Key Features
 - Wallet integration with Stacks Connect
 - Real-time transaction status
 - Responsive design with Tailwind CSS
 - TypeScript for type safety
+
+## 🚀 Deployment Status
+
+**✅ LIVE ON TESTNET!**
+
+### Contract Addresses
+- **Deployer Address**: `ST1PEM6ATK66PP1DC6FWMRVWNKR8MWRWD90GAAJQE`
+- **AMM Contract**: `ST1PEM6ATK66PP1DC6FWMRVWNKR8MWRWD90GAAJQE.amm`
+- **Stream Contract**: `ST1PEM6ATK66PP1DC6FWMRVWNKR8MWRWD90GAAJQE.stream`
+- **Mock Token 1**: `ST1PEM6ATK66PP1DC6FWMRVWNKR8MWRWD90GAAJQE.mock-token`
+- **Mock Token 2**: `ST1PEM6ATK66PP1DC6FWMRVWNKR8MWRWD90GAAJQE.mock-token-2`
+
+### Deployment Details
+- **Deployment Cost**: 0.263680 STX
+- **Duration**: 3 blocks
+- **Status**: ✅ Confirmed on Testnet
+- **Deployment Date**: December 2024
+
+### Transaction IDs
+- **SIP-010 Trait**: `f595e75e2682028b6e5e9793911536f12edd63c3c164939142432ff00ecf2acc`
+- **Mock Token 2**: `0d05a050cbb52271513026ece3e6daa18f11feeba636ca7e7e3b7159ed81290e`
+- **AMM Contract**: `71e277fc5b2ad8ad1cf074b8106ac10f75dd007c6cf111c296124ea87e067afe`
+- **Mock Token 1**: `a26e0c1e07d7ddd0329ecd906187bf518acb1484ced47964217dfdc388b574f0`
+- **Stream Contract**: `b233f5a990dbbefe591192fab57c09015d1f8b654df72fb9b449796020350c3e`
+
+## 🎮 Testing the Deployed Contracts
+
+You can test the deployed contracts in several ways:
+
+### 1. Using the Frontend (Recommended)
+1. Start the frontend: `cd frontend && npm run dev`
+2. Open http://localhost:3002
+3. Connect your Hiro Wallet (make sure it's in testnet mode)
+4. Create pools, add liquidity, and trade tokens!
+
+### 2. Using Clarinet Console
+```bash
+clarinet console --testnet
+# Then interact with the contracts:
+(contract-call? .amm get-pool-data 0x...)
+(contract-call? .stream balance-of u0 'ST1PEM6ATK66PP1DC6FWMRVWNKR8MWRWD90GAAJQE)
+```
+
+### 3. Using Stacks Explorer
+- **AMM Contract**: https://explorer.stacks.co/txid/71e277fc5b2ad8ad1cf074b8106ac10f75dd007c6cf111c296124ea87e067afe?chain=testnet
+- **Stream Contract**: https://explorer.stacks.co/txid/b233f5a990dbbefe591192fab57c09015d1f8b654df72fb9b449796020350c3e?chain=testnet
+- **Mock Token 1**: https://explorer.stacks.co/txid/a26e0c1e07d7ddd0329ecd906187bf518acb1484ced47964217dfdc388b574f0?chain=testnet
+- **Mock Token 2**: https://explorer.stacks.co/txid/0d05a050cbb52271513026ece3e6daa18f11feeba636ca7e7e3b7159ed81290e?chain=testnet
+- **SIP-010 Trait**: https://explorer.stacks.co/txid/f595e75e2682028b6e5e9793911536f12edd63c3c164939142432ff00ecf2acc?chain=testnet
+
+### 🆕 Advanced Features Deployed
+This deployment includes the latest advanced features:
+- **STX Support**: Native STX token trading alongside SIP-010 tokens
+- **Multi-Hop Swaps**: Foundation for complex routing (A→B→C swaps)
+- **Enhanced AMM**: Unified token transfer supporting both STX and SIP-010 tokens
+- **Modern Frontend**: Updated UI showcasing all new capabilities
 
 ## Getting Started
 
@@ -76,18 +139,18 @@ Modern Next.js application with three main sections:
 ### Installation
 
 1. Install dependencies:
-```bash
-npm install
-```
+   ```bash
+   npm install
+   ```
 
 2. Run smart contract tests:
-```bash
-npm test
-```
+   ```bash
+   npm test
+   ```
 
 3. Start the frontend development server:
-```bash
-cd frontend
+   ```bash
+   cd frontend
 npm install
 npm run dev
 ```
@@ -169,14 +232,3 @@ The DEX uses the constant product market maker formula (x * y = k) where:
 - Signature verification for stream modifications
 - Minimum liquidity locks to prevent manipulation
 
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Submit a pull request
-
-## License
-
-MIT

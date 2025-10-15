@@ -13,8 +13,8 @@ import {
 } from "@stacks/transactions";
 
 
-// REPLACE THESE WITH YOUR OWN CONTRACT ADDRESSES
-const AMM_CONTRACT_ADDRESS = "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM";
+// 🚀 LIVE ON TESTNET!
+const AMM_CONTRACT_ADDRESS = "ST1PEM6ATK66PP1DC6FWMRVWNKR8MWRWD90GAAJQE";
 const AMM_CONTRACT_NAME = "amm";
 const AMM_CONTRACT_PRINCIPAL = `${AMM_CONTRACT_ADDRESS}.${AMM_CONTRACT_NAME}`;
 
@@ -250,4 +250,42 @@ export async function getUserLiquidity(pool: Pool, user: string) {
   if (userLiquidityResult.type !== "ok") return 0;
   if (userLiquidityResult.value.type !== "uint") return 0;
   return parseInt(userLiquidityResult.value.value.toString());
+}
+
+// Multi-hop swap function
+export async function multiHopSwap(
+  tokens: string[],
+  inputAmount: number,
+  minOutput: number
+) {
+  const tokenCVs = tokens.map(token => principalCV(token));
+  
+  const txOptions = {
+    contractAddress: AMM_CONTRACT_ADDRESS,
+    contractName: AMM_CONTRACT_NAME,
+    functionName: "multi-hop-swap",
+    functionArgs: [
+      Cl.list(tokenCVs),
+      uintCV(inputAmount),
+      uintCV(minOutput),
+    ],
+  };
+
+  return txOptions;
+}
+
+// Helper function to check if a token is STX
+export function isSTXToken(token: string): boolean {
+  // In a real implementation, you'd check against the actual STX address
+  // For demo purposes, we'll use a pattern to identify STX
+  return token === "STX" || token.includes("STX") || token === "SP000000000000000000002Q6VF78";
+}
+
+// Enhanced pool creation that handles STX
+export async function createPoolWithSTX(token0: string, token1: string, fee: number) {
+  // If either token is STX, use the deployer address as STX representation
+  const normalizedToken0 = isSTXToken(token0) ? AMM_CONTRACT_ADDRESS : token0;
+  const normalizedToken1 = isSTXToken(token1) ? AMM_CONTRACT_ADDRESS : token1;
+  
+  return createPool(normalizedToken0, normalizedToken1, fee);
 }

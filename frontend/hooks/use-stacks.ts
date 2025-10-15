@@ -1,6 +1,7 @@
 import {
   addLiquidity,
   createPool,
+  multiHopSwap,
   Pool,
   removeLiquidity,
   swap,
@@ -41,8 +42,7 @@ export function useStacks() {
       return;
     }
 
-    // For demo purposes, we'll simulate a successful connection
-    // In a real app, you'd use the actual wallet connection APIs
+   
     setTimeout(() => {
       const mockUserData: UserData = {
         profile: {
@@ -164,9 +164,32 @@ export function useStacks() {
     }
   }
 
+  async function handleMultiHopSwap(tokens: string[], inputAmount: number, minOutput: number) {
+    try {
+      if (!userData) {
+        alert("Please connect your wallet first");
+        return;
+      }
+      const options = await multiHopSwap(tokens, inputAmount, minOutput);
+      await openContractCall({
+        ...options,
+        appDetails,
+        onFinish: (data) => {
+          window.alert("Sent multi-hop swap transaction");
+          console.log(data);
+        },
+        postConditionMode: PostConditionMode.Allow,
+      });
+    } catch (_err) {
+      const err = _err as Error;
+      console.log(err);
+      window.alert(err.message);
+      return;
+    }
+  }
+
   useEffect(() => {
-    // For demo purposes, we'll simulate a connected user
-    // In a real app, you'd check for wallet connection status
+   
     console.log("Wallet connection status would be checked here");
   }, []);
 
@@ -177,6 +200,7 @@ export function useStacks() {
     handleSwap,
     handleAddLiquidity,
     handleRemoveLiquidity,
+    handleMultiHopSwap,
     connectWallet,
     disconnectWallet,
   };

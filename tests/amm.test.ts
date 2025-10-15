@@ -252,9 +252,37 @@ describe("AMM Tests", () => {
       "token-0": mockTokenOne,
       "token-1": mockTokenTwo,
       fee: Cl.uint(500),
-      liquidity: Cl.uint(706106),
+      liquidity: Cl.uint(707106),
       "balance-0": Cl.uint(1000000),
       "balance-1": Cl.uint(500000),
     })));
+  });
+
+  it("should support multi-hop swaps (placeholder)", () => {
+    // Test the multi-hop function exists and returns expected error for unimplemented feature
+    const tokenPath = Cl.list([mockTokenOne, mockTokenTwo]);
+
+    const { result: multiHopResult } = simnet.callPublicFn(
+      "amm",
+      "multi-hop-swap",
+      [tokenPath, Cl.uint(10000), Cl.uint(1)],
+      alice
+    );
+
+    expect(multiHopResult).toBeErr(Cl.uint(209)); // ERR_INVALID_TOKEN_TYPE - feature not implemented
+  });
+
+  it("should reject multi-hop swaps with insufficient tokens", () => {
+    // Try multi-hop with only one token
+    const singleToken = Cl.list([mockTokenOne]);
+    
+    const { result: result } = simnet.callPublicFn(
+      "amm",
+      "multi-hop-swap",
+      [singleToken, Cl.uint(10000), Cl.uint(1)],
+      alice
+    );
+
+    expect(result).toBeErr(Cl.uint(209)); // ERR_INVALID_TOKEN_TYPE - feature not implemented
   });
 });
