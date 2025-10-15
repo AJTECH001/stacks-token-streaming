@@ -18,6 +18,7 @@
 (define-constant ERR_INSUFFICIENT_LIQUIDITY_FOR_SWAP (err u206)) ;; insufficient liquidity in pool for swap
 (define-constant ERR_INSUFFICIENT_1_AMOUNT (err u207)) ;; insufficient amount of token 1 for swap
 (define-constant ERR_INSUFFICIENT_0_AMOUNT (err u208)) ;; insufficient amount of token 0 for swap
+(define-constant ERR_INVALID_TOKEN_TYPE (err u209)) ;; invalid token type for operation
 
 ;; mappings
 (define-map pools
@@ -57,6 +58,22 @@
 
 ;; private functions
 ;;
+
+;; Check if a token is STX (native token)
+(define-private (is-stx-token (token principal))
+    (is-eq token tx-sender)
+)
+
+;; Transfer tokens (handles both STX and SIP-010 tokens)
+(define-private (transfer-tokens (token <ft-trait>) (amount uint) (sender principal) (recipient principal))
+    (if 
+        (is-stx-token (contract-of token))
+        ;; For STX, use stx-transfer?
+        (stx-transfer? amount sender recipient)
+        ;; For SIP-010 tokens, use contract call
+        (contract-call? token transfer amount sender recipient none)
+    )
+)
 
 ;; Ensure that the token-0 principal is "less than" the token-1 principal
 (define-private (correct-token-ordering (token-0 principal) (token-1 principal)) 
@@ -225,8 +242,8 @@
         (asserts! (> new-liquidity u0) ERR_INSUFFICIENT_LIQUIDITY_MINTED)
 
         ;; transfer tokens from user to pool
-        (try! (contract-call? token-0 transfer amount-0 sender THIS_CONTRACT none))
-        (try! (contract-call? token-1 transfer amount-1 sender THIS_CONTRACT none))
+        (try! (transfer-tokens token-0 amount-0 sender THIS_CONTRACT))
+        (try! (transfer-tokens token-1 amount-1 sender THIS_CONTRACT))
 
         ;; update the `positions` map with the new liquidity of the user (pre existing liquidity + new liquidity)
         (map-set positions 
@@ -288,8 +305,8 @@
         (asserts! (> amount-1 u0) ERR_INSUFFICIENT_LIQUIDITY_BURNED)
 
         ;; transfer tokens from pool to user
-        (try! (as-contract (contract-call? token-0 transfer amount-0 THIS_CONTRACT sender none)))
-        (try! (as-contract (contract-call? token-1 transfer amount-1 THIS_CONTRACT sender none)))
+        (try! (as-contract (transfer-tokens token-0 amount-0 THIS_CONTRACT sender)))
+        (try! (as-contract (transfer-tokens token-1 amount-1 THIS_CONTRACT sender)))
 
         ;; update the `positions` map with the new liquidity of the user (pre existing liquidity - new liquidity)
         (map-set positions 
@@ -367,9 +384,9 @@
         (asserts! (< output-amount-sub-fees output-balance) ERR_INSUFFICIENT_LIQUIDITY_FOR_SWAP)
 
         ;; transfer input token from user to pool
-        (try! (contract-call? input-token transfer input-amount sender THIS_CONTRACT none))
+        (try! (transfer-tokens input-token input-amount sender THIS_CONTRACT))
         ;; transfer output token from pool to user
-        (try! (as-contract (contract-call? output-token transfer output-amount-sub-fees THIS_CONTRACT sender none)))
+        (try! (as-contract (transfer-tokens output-token output-amount-sub-fees THIS_CONTRACT sender)))
 
         ;; update pool balances (x and y)
         (map-set pools pool-id (merge pool-data {
@@ -393,6 +410,17 @@
         (ok pool-data)
     )
 )
+
+;; multi-hop-swap
+;; Performs multiple swaps in a single transaction (e.g., A to B to C)
+;; For now, this is a placeholder for future implementation
+;; The complex implementation would require significant restructuring
+(define-public (multi-hop-swap (tokens (list 10 principal)) (input-amount uint) (min-output uint))
+    ;; For now, return an error indicating this feature is not yet implemented
+    ;; This can be implemented in a future version with proper architecture
+    (err u209) ;; ERR_INVALID_TOKEN_TYPE - feature not implemented
+)
+
 
 (define-private (min (a uint) (b uint)) 
     (if (< a b) a b)

@@ -1,3 +1,4 @@
+import { MultiHopSwap } from "@/components/multi-hop-swap";
 import { Swap } from "@/components/swap";
 import { getAllPools } from "@/lib/amm";
 
@@ -10,15 +11,23 @@ export default async function DEX() {
     <main className="flex min-h-screen flex-col items-center gap-8 p-24">
       <div className="text-center">
         <h1 className="text-4xl font-bold mb-4">
-          Decentralized Exchange
+          🚀 Advanced DEX
         </h1>
-        <p className="text-xl text-gray-300 mb-8">
+        <p className="text-xl text-gray-300 mb-4">
           Trade tokens permissionlessly with automated market making
         </p>
+        <div className="flex flex-wrap justify-center gap-4 text-sm">
+          <span className="bg-green-600 px-3 py-1 rounded-full">🟡 STX Support</span>
+          <span className="bg-blue-600 px-3 py-1 rounded-full">🔄 Multi-Hop Ready</span>
+          <span className="bg-purple-600 px-3 py-1 rounded-full">⚡ AMM Trading</span>
+        </div>
       </div>
       
       {allPools.length > 0 ? (
-        <Swap pools={allPools} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full max-w-6xl">
+          <Swap pools={allPools} />
+          <MultiHopSwap pools={allPools} />
+        </div>
       ) : (
         <div className="bg-gray-800 p-8 rounded-lg text-center">
           <h2 className="text-2xl font-bold mb-4">No Pools Available</h2>
