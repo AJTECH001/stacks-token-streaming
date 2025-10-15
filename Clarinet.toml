@@ -1,14 +1,32 @@
 [project]
 name = 'stacks-token-streaming'
-description = ''
+description = 'Decentralized Exchange with Token Streaming'
 authors = []
 telemetry = true
 cache_dir = './.cache'
-requirements = []
+
+[[project.requirements]]
+contract_id = 'SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE.sip-010-trait-ft-standard'
+
 [contracts.stream]
 path = 'contracts/stream.clar'
 clarity_version = 3
-epoch = 'latest'
+epoch = 3.0
+
+[contracts.amm]
+path = 'contracts/amm.clar'
+clarity_version = 3
+epoch = 3.0
+
+[contracts.mock-token]
+path = 'contracts/mock-token.clar'
+clarity_version = 3
+epoch = 3.0
+
+[contracts.mock-token-2]
+path = 'contracts/mock-token.clar'
+clarity_version = 2
+epoch = 2.5
 [repl.analysis]
 passes = ['check_checker']
 
